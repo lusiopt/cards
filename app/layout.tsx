@@ -26,33 +26,33 @@ export default function RootLayout({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CreditCard className="w-6 h-6 text-blue-600" />
-                  <h1 className="text-xl font-bold">Cards</h1>
+                  <h1 className="text-xl font-bold text-gray-900">Cards</h1>
                 </div>
                 <nav className="flex gap-6">
                   <Link
                     href="/"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium"
                   >
                     <Home className="w-4 h-4" />
                     Dashboard
                   </Link>
                   <Link
                     href="/import"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium"
                   >
                     <Upload className="w-4 h-4" />
                     Importar
                   </Link>
                   <Link
                     href="/statements"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium"
                   >
                     <FileText className="w-4 h-4" />
                     Faturas
                   </Link>
                   <Link
                     href="/settings"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium"
                   >
                     <Settings className="w-4 h-4" />
                     Configurações

@@ -71,8 +71,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-gray-600 mt-2">
+        <h2 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard</h2>
+        <p className="text-gray-700 mt-2">
           Visão geral das suas despesas de cartões de crédito
         </p>
       </div>
@@ -81,13 +81,13 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-gray-700">
               Total de Transações
             </CardTitle>
-            <CreditCard className="w-4 h-4 text-gray-600" />
+            <CreditCard className="w-4 h-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTransactions}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.totalTransactions}</div>
             <p className="text-xs text-gray-600 mt-1">
               Todas as transações importadas
             </p>
@@ -96,13 +96,13 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-gray-700">
               Valor Total
             </CardTitle>
-            <TrendingUp className="w-4 h-4 text-gray-600" />
+            <TrendingUp className="w-4 h-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900">
               {formatCurrency(stats.totalAmount)}
             </div>
             <p className="text-xs text-gray-600 mt-1">
@@ -113,13 +113,13 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-gray-700">
               Categorias
             </CardTitle>
-            <ArrowUpRight className="w-4 h-4 text-gray-600" />
+            <ArrowUpRight className="w-4 h-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.categoriesCount}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.categoriesCount}</div>
             <p className="text-xs text-gray-600 mt-1">
               Categorias disponíveis
             </p>
@@ -128,13 +128,13 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-gray-700">
               Média por Transação
             </CardTitle>
-            <ArrowDownRight className="w-4 h-4 text-gray-600" />
+            <ArrowDownRight className="w-4 h-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900">
               {formatCurrency(
                 stats.totalTransactions > 0
                   ? stats.totalAmount / stats.totalTransactions
@@ -151,16 +151,16 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Começar</CardTitle>
+          <CardTitle className="text-gray-900">Começar</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {stats.totalTransactions === 0 ? (
             <div className="text-center py-12">
               <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Nenhuma transação ainda
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4">
                 Comece importando um extrato de cartão em CSV, XLSX ou PDF
               </p>
               <Link
