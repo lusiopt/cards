@@ -99,6 +99,7 @@ async function main() {
   // Limpar dados existentes (opcional)
   await prisma.settings.deleteMany()
   await prisma.transaction.deleteMany()
+  await prisma.statement.deleteMany()
   await prisma.importBatch.deleteMany()
   await prisma.category.deleteMany()
   await prisma.card.deleteMany()
