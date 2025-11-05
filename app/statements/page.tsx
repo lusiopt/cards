@@ -89,7 +89,7 @@ export default function StatementsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-lg text-gray-600">Carregando faturas...</div>
+        <div className="text-lg text-gray-700">Carregando faturas...</div>
       </div>
     )
   }
@@ -97,8 +97,8 @@ export default function StatementsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Faturas</h2>
-        <p className="text-gray-600 mt-2">
+        <h2 className="text-3xl font-bold tracking-tight text-gray-900">Faturas</h2>
+        <p className="text-gray-700 mt-2">
           Visualize e gerencie suas faturas mensais por cartão
         </p>
       </div>
@@ -107,8 +107,8 @@ export default function StatementsPage() {
         <Card>
           <CardContent className="pt-6 text-center py-12">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhuma fatura ainda</h3>
-            <p className="text-gray-600 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma fatura ainda</h3>
+            <p className="text-gray-700 mb-4">
               Importe extratos de cartão para gerar faturas automaticamente
             </p>
             <Link
@@ -136,10 +136,10 @@ export default function StatementsPage() {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: statement.card.color }}
                       />
-                      <CardTitle className="text-lg">{statement.card.name}</CardTitle>
+                      <CardTitle className="text-lg text-gray-900">{statement.card.name}</CardTitle>
                     </div>
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${
                         statement.isPaid
                           ? 'bg-green-100 text-green-700'
                           : 'bg-yellow-100 text-yellow-700'
@@ -151,7 +151,7 @@ export default function StatementsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Período */}
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
                     <Calendar className="w-4 h-4" />
                     <span>
                       {new Date(statement.periodStart).toLocaleDateString('pt-BR')} -{' '}
@@ -161,17 +161,17 @@ export default function StatementsPage() {
 
                   {/* Total */}
                   <div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                    <div className="flex items-center gap-2 text-sm text-gray-700 mb-1">
                       <DollarSign className="w-4 h-4" />
                       <span>Valor Total</span>
                     </div>
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold text-gray-900">
                       {formatCurrency(statement.totalAmount)}
                     </div>
                   </div>
 
                   {/* Transações */}
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
                     <CreditCard className="w-4 h-4" />
                     <span>{statement.transactionCount} transações</span>
                   </div>
@@ -179,12 +179,12 @@ export default function StatementsPage() {
                   {/* Categorias principais */}
                   {categories.length > 0 && (
                     <div className="pt-2 border-t">
-                      <div className="text-xs text-gray-500 mb-2">Top categorias:</div>
+                      <div className="text-xs text-gray-600 mb-2">Top categorias:</div>
                       <div className="space-y-1">
                         {categories.slice(0, 3).map((cat) => (
                           <div key={cat} className="flex justify-between text-sm">
-                            <span className="text-gray-600 capitalize">{cat}</span>
-                            <span className="font-medium">
+                            <span className="text-gray-700 capitalize">{cat}</span>
+                            <span className="font-medium text-gray-900">
                               {formatCurrency(breakdown[cat].total)}
                             </span>
                           </div>
@@ -197,7 +197,7 @@ export default function StatementsPage() {
                   <div className="flex gap-2">
                     <Link
                       href={`/statements/${statement.id}`}
-                      className="flex-1 text-center px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                      className="flex-1 text-center px-4 py-2 text-sm text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors font-medium"
                     >
                       Ver Detalhes
                     </Link>

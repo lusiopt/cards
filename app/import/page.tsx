@@ -55,15 +55,15 @@ export default function ImportPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h2 className="text-3xl font-bold">Importar Extrato</h2>
-        <p className="text-gray-600 mt-2">
+        <h2 className="text-3xl font-bold text-gray-900">Importar Extrato</h2>
+        <p className="text-gray-700 mt-2">
           Faça upload do seu extrato em CSV, XLSX ou PDF
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Selecionar Arquivo</CardTitle>
+          <CardTitle className="text-gray-900">Selecionar Arquivo</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="border-2 border-dashed rounded-lg p-12 text-center">
@@ -75,7 +75,7 @@ export default function ImportPage() {
               className="max-w-xs mx-auto"
             />
             {file && (
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-gray-700">
                 Arquivo: {file.name}
               </p>
             )}
@@ -98,8 +98,8 @@ export default function ImportPage() {
               <div className="flex items-start gap-3">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
                 <div>
-                  <p className="font-semibold">Importação concluída!</p>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="font-semibold text-gray-900">Importação concluída!</p>
+                  <p className="text-sm text-gray-700 mt-1">
                     {result.imported} transações importadas e classificadas automaticamente
                   </p>
                   {result.errors > 0 && (
@@ -119,12 +119,12 @@ export default function ImportPage() {
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-semibold">{result.error || 'Erro na importação'}</p>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="font-semibold text-gray-900">{result.error || 'Erro na importação'}</p>
+                  <p className="text-sm text-gray-700 mt-1">
                     {result.message || result.details || 'Erro ao importar arquivo'}
                   </p>
                   {result.details && (
-                    <p className="text-xs text-gray-500 mt-2 font-mono bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-600 mt-2 font-mono bg-gray-50 p-2 rounded">
                       {result.details}
                     </p>
                   )}
