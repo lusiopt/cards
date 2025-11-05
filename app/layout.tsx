@@ -44,13 +44,6 @@ export default function RootLayout({
                     Importar
                   </Link>
                   <Link
-                    href="/transactions"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Transações
-                  </Link>
-                  <Link
                     href="/statements"
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
                   >

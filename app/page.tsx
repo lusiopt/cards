@@ -25,23 +25,29 @@ export default function Dashboard() {
     async function loadStats() {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-        // Buscar estatísticas
-        const [transactionsRes, categoriesRes] = await Promise.all([
-          fetch(`${baseUrl}/api/transactions?limit=1000`),
+        // Buscar estatísticas apenas de faturas ativas
+        const [statementsRes, categoriesRes] = await Promise.all([
+          fetch(`${baseUrl}/api/statements`),
           fetch(`${baseUrl}/api/categories`)
         ])
 
-        const transactionsData = await transactionsRes.json()
+        const statementsData = await statementsRes.json()
         const categoriesData = await categoriesRes.json()
 
-        const total = transactionsData.transactions.reduce(
-          (sum: number, t: any) => sum + parseFloat(t.amount),
+        // Calcular totais baseado nas faturas
+        const totalTransactions = statementsData.statements.reduce(
+          (sum: number, s: any) => sum + (s.transactionCount || 0),
+          0
+        )
+
+        const totalAmount = statementsData.statements.reduce(
+          (sum: number, s: any) => sum + (s.totalAmount || 0),
           0
         )
 
         setStats({
-          totalTransactions: transactionsData.total,
-          totalAmount: total,
+          totalTransactions,
+          totalAmount,
           categoriesCount: categoriesData.categories.length
         })
       } catch (error) {
@@ -182,16 +188,16 @@ export default function Dashboard() {
               </Link>
 
               <Link
-                href="/transactions"
+                href="/statements"
                 className="flex items-center gap-4 p-4 rounded-lg border hover:border-blue-600 hover:bg-blue-50 transition-colors"
               >
                 <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
                   <CreditCard className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <div className="font-semibold">Ver Transações</div>
+                  <div className="font-semibold">Ver Faturas</div>
                   <div className="text-sm text-gray-600">
-                    Gerenciar suas despesas
+                    Gerenciar suas faturas
                   </div>
                 </div>
               </Link>
