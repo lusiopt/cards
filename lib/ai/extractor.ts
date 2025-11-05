@@ -107,12 +107,38 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
       jsonText = jsonText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
     }
 
-    const result = JSON.parse(jsonText.trim())
+    // Verificar se retornou HTML
+    if (jsonText.startsWith('<') || jsonText.includes('<html')) {
+      console.error('❌ IA retornou HTML ao invés de JSON')
+      console.error('Resposta:', jsonText.substring(0, 500))
+      throw new Error('Erro ao processar arquivo - resposta inválida da IA')
+    }
 
-    return result.transactions || []
+    // Parsear JSON
+    let result
+    try {
+      result = JSON.parse(jsonText.trim())
+    } catch (parseError) {
+      console.error('❌ Erro ao parsear JSON')
+      console.error('Resposta:', jsonText.substring(0, 500))
+      throw new Error('Resposta da IA não é um JSON válido')
+    }
+
+    if (!result.transactions || !Array.isArray(result.transactions)) {
+      console.error('❌ Resposta não contém transactions')
+      console.error('Estrutura:', Object.keys(result))
+      throw new Error('Resposta não contém lista de transações')
+    }
+
+    return result.transactions
 
   } catch (error) {
     console.error('Erro ao extrair transações com IA:', error)
+
+    if (error instanceof Error) {
+      throw error
+    }
+
     throw new Error('Não foi possível extrair transações do arquivo')
   }
 }
@@ -191,17 +217,45 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
 
     let jsonText = content.text.trim()
 
+    // Remover markdown code blocks
     if (jsonText.startsWith('```json')) {
       jsonText = jsonText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
     } else if (jsonText.startsWith('```')) {
       jsonText = jsonText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
     }
 
-    const result = JSON.parse(jsonText.trim())
-    return result.transactions || []
+    // Verificar se retornou HTML ao invés de JSON
+    if (jsonText.startsWith('<') || jsonText.includes('<html')) {
+      console.error('❌ IA retornou HTML ao invés de JSON')
+      console.error('Resposta:', jsonText.substring(0, 500))
+      throw new Error('O PDF pode estar em um formato não suportado ou muito complexo')
+    }
+
+    // Tentar parsear JSON
+    let result
+    try {
+      result = JSON.parse(jsonText.trim())
+    } catch (parseError) {
+      console.error('❌ Erro ao parsear JSON da resposta da IA')
+      console.error('Resposta recebida:', jsonText.substring(0, 500))
+      throw new Error('Resposta da IA não está em formato JSON válido')
+    }
+
+    if (!result.transactions || !Array.isArray(result.transactions)) {
+      console.error('❌ Resposta não contém array de transactions')
+      console.error('Estrutura recebida:', Object.keys(result))
+      throw new Error('Resposta da IA não contém transações válidas')
+    }
+
+    return result.transactions
 
   } catch (error) {
     console.error('Erro ao extrair transações de PDF:', error)
+
+    if (error instanceof Error) {
+      throw error
+    }
+
     throw new Error('Não foi possível processar o PDF')
   }
 }
