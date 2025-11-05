@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Extrair e classificar transações com IA
     console.log('🤖 Extraindo transações com IA Claude...')
-    const transactions = await extractTransactionsInBatches(rows, 50)
+    const transactions = await extractTransactionsInBatches(rows, 50, file)
     console.log(`✅ IA extraiu ${transactions.length} transações`)
 
     // Salvar transações no banco
