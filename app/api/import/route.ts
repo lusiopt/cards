@@ -3,17 +3,41 @@ import { parseFile } from '@/lib/parsers'
 import { prisma } from '@/lib/db'
 import { classifyTransaction } from '@/lib/ai/classifier'
 
+// Aumentar limite de body size
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const cardName = formData.get('cardName') as string
+    const cardName = (formData.get('cardName') as string) || 'Default Card'
 
     if (!file) {
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
       )
+    }
+
+    // Criar ou buscar card padrão
+    let card = await prisma.card.findFirst({
+      where: { name: cardName }
+    })
+
+    if (!card) {
+      card = await prisma.card.create({
+        data: {
+          name: cardName,
+          issuer: 'Unknown',
+          currency: 'USD'
+        }
+      })
     }
 
     // Parse do arquivo
@@ -78,7 +102,7 @@ export async function POST(request: NextRequest) {
             aiConfidence: classification.confidence,
             aiExplanation: classification.explanation,
             aiProcessed: true,
-            cardId: cardName, // Temporário - criar card depois
+            cardId: card.id,
             importBatchId: importBatch.id,
             rawData: JSON.stringify(row)
           }
@@ -113,8 +137,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Import error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: 'Failed to import file', details: String(error) },
+      {
+        success: false,
+        error: 'Erro ao importar arquivo',
+        details: errorMessage
+      },
       { status: 500 }
     )
   }

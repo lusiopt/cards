@@ -99,11 +99,16 @@ export default function ImportPage() {
             ) : (
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold">Erro na importação</p>
                   <p className="text-sm text-gray-600 mt-1">
                     {result.error || 'Erro desconhecido'}
                   </p>
+                  {result.details && (
+                    <p className="text-xs text-gray-500 mt-2 font-mono bg-gray-50 p-2 rounded">
+                      {result.details}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
