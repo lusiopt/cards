@@ -107,6 +107,36 @@ export async function POST(request: NextRequest) {
       console.log(`💳 Card atualizado com dados da fatura`)
     }
 
+    // Verificar se já existe uma fatura para este cartão nesta data
+    const existingStatement = await prisma.statement.findUnique({
+      where: {
+        cardId_statementDate: {
+          cardId: card.id,
+          statementDate: statementDate
+        }
+      }
+    })
+
+    if (existingStatement) {
+      console.log(`⚠️  Fatura duplicada detectada! Já existe uma fatura para ${statementDate.toLocaleDateString()}`)
+
+      // Atualizar batch como erro
+      await prisma.importBatch.update({
+        where: { id: importBatch.id },
+        data: {
+          status: 'error',
+          errors: JSON.stringify(['Fatura duplicada: já existe uma fatura para esta data']),
+          completedAt: new Date()
+        }
+      })
+
+      return NextResponse.json({
+        success: false,
+        error: 'Fatura duplicada',
+        message: `Já existe uma fatura para o cartão "${card.name}" na data ${statementDate.toLocaleDateString()}. Delete a fatura existente antes de importar novamente.`
+      }, { status: 400 })
+    }
+
     // Criar Statement (fatura) para este import
     const statement = await prisma.statement.create({
       data: {
