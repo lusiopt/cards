@@ -19,6 +19,7 @@ model Card {
   currency     String        @default("USD") // moeda padrão do cartão
   color        String        @default("#6366f1") // cor para UI
   transactions Transaction[]
+  statements   Statement[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -32,6 +33,10 @@ model Transaction {
   // Relacionamento com cartão
   cardId           String
   card             Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  // Relacionamento com fatura (opcional - transações podem ser agrupadas por fatura)
+  statementId      String?
+  statement        Statement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
 
   // Datas
   date             DateTime // data da compra/transação
@@ -84,6 +89,7 @@ model Transaction {
   @@index([importBatchId])
   @@index([merchant])
   @@index([aiProcessed])
+  @@index([statementId])
 }
 
 // Categorias
@@ -111,6 +117,49 @@ model Category {
   @@index([parentId])
 }
 
+// Fatura mensal (Statement)
+model Statement {
+  id               String        @id @default(cuid())
+
+  // Identificação da fatura
+  cardId           String
+  card             Card          @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  // Período da fatura
+  statementDate    DateTime      // data de fechamento
+  dueDate          DateTime?     // data de vencimento
+  periodStart      DateTime      // início do período
+  periodEnd        DateTime      // fim do período
+
+  // Totais
+  totalAmount      Float         @default(0) // total da fatura
+  paidAmount       Float         @default(0) // valor pago
+  balance          Float         @default(0) // saldo devedor
+
+  // Estatísticas
+  transactionCount Int           @default(0)
+  categoryBreakdown String?      // JSON com breakdown por categoria
+
+  // Status
+  status           String        @default("open") // open, paid, overdue, partial
+  isPaid           Boolean       @default(false)
+  paidAt           DateTime?
+
+  // Relações
+  importBatch      ImportBatch?  @relation(fields: [importBatchId], references: [id])
+  importBatchId    String?
+  transactions     Transaction[]
+
+  // Timestamps
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([cardId, statementDate])
+  @@index([cardId])
+  @@index([statementDate])
+  @@index([status])
+}
+
 // Batch de importação
 model ImportBatch {
   id           String        @id @default(cuid())
@@ -134,6 +183,7 @@ model ImportBatch {
 
   // Relações
   transactions Transaction[]
+  statements   Statement[]
 
   // Timestamps
   createdAt    DateTime      @default(now())

@@ -69,10 +69,31 @@ export async function POST(request: NextRequest) {
     const transactions = await extractTransactionsInBatches(rows, 50, file)
     console.log(`✅ IA extraiu ${transactions.length} transações`)
 
+    // Identificar período da fatura (baseado nas datas das transações)
+    const dates = transactions.map(t => new Date(t.date)).filter(d => !isNaN(d.getTime()))
+    const periodStart = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : new Date()
+    const periodEnd = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : new Date()
+    const statementDate = periodEnd // data de fechamento = última transação
+
+    // Criar Statement (fatura) para este import
+    const statement = await prisma.statement.create({
+      data: {
+        cardId: card.id,
+        statementDate,
+        periodStart,
+        periodEnd,
+        importBatchId: importBatch.id,
+        status: 'open'
+      }
+    })
+
+    console.log(`📋 Fatura criada: ${periodStart.toLocaleDateString()} a ${periodEnd.toLocaleDateString()}`)
+
     // Salvar transações no banco
     let importedCount = 0
     let errorCount = 0
     const errors: string[] = []
+    let totalAmount = 0
 
     console.log(`💾 Salvando ${transactions.length} transações no banco...`)
 
@@ -94,7 +115,7 @@ export async function POST(request: NextRequest) {
           where: { slug: transaction.category || 'other' }
         })
 
-        // Criar transação
+        // Criar transação vinculada à fatura
         await prisma.transaction.create({
           data: {
             date,
@@ -109,12 +130,14 @@ export async function POST(request: NextRequest) {
             aiExplanation: transaction.explanation || 'Classificado automaticamente',
             aiProcessed: true,
             cardId: card.id,
+            statementId: statement.id,
             importBatchId: importBatch.id,
             rawData: JSON.stringify(transaction)
           }
         })
 
         importedCount++
+        totalAmount += transaction.amount
 
         if (i % 10 === 0) {
           console.log(`💾 Progresso: ${i + 1}/${transactions.length} transações salvas`)
@@ -127,6 +150,31 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Importação concluída: ${importedCount} salvas, ${errorCount} erros`)
+
+    // Calcular breakdown por categoria
+    const categoryBreakdown: Record<string, { count: number; total: number }> = {}
+
+    for (const transaction of transactions) {
+      const cat = transaction.category || 'other'
+      if (!categoryBreakdown[cat]) {
+        categoryBreakdown[cat] = { count: 0, total: 0 }
+      }
+      categoryBreakdown[cat].count++
+      categoryBreakdown[cat].total += transaction.amount
+    }
+
+    // Atualizar Statement com totais
+    await prisma.statement.update({
+      where: { id: statement.id },
+      data: {
+        totalAmount,
+        balance: totalAmount,
+        transactionCount: importedCount,
+        categoryBreakdown: JSON.stringify(categoryBreakdown)
+      }
+    })
+
+    console.log(`📊 Fatura atualizada: Total $${totalAmount.toFixed(2)}, ${importedCount} transações`)
 
     // Atualizar batch
     await prisma.importBatch.update({
@@ -143,9 +191,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       importBatchId: importBatch.id,
+      statementId: statement.id,
       imported: importedCount,
       errors: errorCount,
-      total: rows.length
+      total: rows.length,
+      statement: {
+        period: `${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`,
+        totalAmount,
+        transactionCount: importedCount,
+        categoryBreakdown
+      }
     })
 
   } catch (error) {
