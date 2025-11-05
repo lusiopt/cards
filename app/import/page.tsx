@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,11 +25,25 @@ export default function ImportPage() {
         method: 'POST',
         body: formData
       })
+
+      // Verificar se a resposta é JSON
+      const contentType = res.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Resposta inválida do servidor. Verifique se o arquivo está no formato correto.')
+      }
+
       const data = await res.json()
+
+      // Se o servidor retornou erro HTTP mas ainda é JSON
+      if (!res.ok) {
+        throw new Error(data.error || data.details || 'Erro ao processar arquivo')
+      }
+
       setResult(data)
     } catch (error) {
       console.error('Import error:', error)
       setResult({
+        success: false,
         error: 'Erro ao importar arquivo',
         details: error instanceof Error ? error.message : String(error)
       })
@@ -92,12 +107,12 @@ export default function ImportPage() {
                       {result.errors} linhas com erro
                     </p>
                   )}
-                  <a
+                  <Link
                     href="/transactions"
                     className="text-sm text-blue-600 hover:underline mt-2 inline-block"
                   >
                     Ver transações →
-                  </a>
+                  </Link>
                 </div>
               </div>
             ) : (
