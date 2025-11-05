@@ -20,15 +20,20 @@ export async function parsePDF(fileBuffer: ArrayBuffer): Promise<PDFParseResult>
   // Converter ArrayBuffer para base64
   const base64 = Buffer.from(fileBuffer).toString('base64')
 
-  const prompt = `Você é um especialista em extrair dados de extratos bancários em PDF.
+  const prompt = `Você é um especialista em extrair dados de extratos de cartão de crédito em PDF.
 
-Analise o PDF e extraia TODAS as transações em formato JSON.
+Analise o PDF e extraia TODAS as transações/compras listadas.
+
+IMPORTANTE:
+- Procure por tabelas de transações, compras, débitos ou lançamentos
+- Ignore linhas de totais, resumos e cabeçalhos
+- Extraia APENAS transações individuais de compras/débitos
 
 Para cada transação, identifique:
 - date: data da transação (formato YYYY-MM-DD)
-- merchant: nome do estabelecimento
-- description: descrição completa
-- amount: valor numérico (sem símbolo de moeda)
+- merchant: nome do estabelecimento (geralmente em CAPS)
+- description: descrição completa da linha
+- amount: valor numérico positivo (sem símbolo, use ponto decimal)
 - currency: código da moeda (USD, EUR, BRL, etc)
 
 Retorne APENAS um JSON válido neste formato:
@@ -37,16 +42,23 @@ Retorne APENAS um JSON válido neste formato:
   "confidence": 0.95,
   "rows": [
     {
-      "date": "2024-01-15",
+      "date": "2025-10-24",
       "merchant": "STARBUCKS",
       "description": "STARBUCKS #12345 NEW YORK NY",
       "amount": "5.75",
+      "currency": "USD"
+    },
+    {
+      "date": "2025-10-23",
+      "merchant": "AMAZON",
+      "description": "AMAZON.COM AMZN.COM/BILL",
+      "amount": "29.99",
       "currency": "USD"
     }
   ]
 }
 
-RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
+RETORNE APENAS O JSON, SEM TEXTO ADICIONAL ANTES OU DEPOIS.`
 
   try {
     const message = await anthropic.messages.create({

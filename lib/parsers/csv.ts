@@ -10,8 +10,11 @@ export interface ParsedRow {
 }
 
 export async function parseCSV(file: File): Promise<ParsedRow[]> {
+  // Ler o arquivo como texto
+  const text = await file.text()
+
   return new Promise((resolve, reject) => {
-    Papa.parse(file, {
+    Papa.parse(text, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
