@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
-import { CreditCard, Calendar, DollarSign, FileText } from 'lucide-react'
+import { CreditCard, Calendar, DollarSign, FileText, Trash2 } from 'lucide-react'
 
 interface Statement {
   id: string
@@ -29,23 +29,52 @@ interface Statement {
 export default function StatementsPage() {
   const [statements, setStatements] = useState<Statement[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
-    async function loadStatements() {
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-        const res = await fetch(`${baseUrl}/api/statements`)
-        const data = await res.json()
-        setStatements(data.statements || [])
-      } catch (error) {
-        console.error('Erro ao carregar faturas:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadStatements()
   }, [])
+
+  async function loadStatements() {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+      const res = await fetch(`${baseUrl}/api/statements`)
+      const data = await res.json()
+      setStatements(data.statements || [])
+    } catch (error) {
+      console.error('Erro ao carregar faturas:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDelete(id: string, cardName: string, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!confirm(`Tem certeza que deseja deletar a fatura do cartão "${cardName}"? Esta ação não pode ser desfeita.`)) {
+      return
+    }
+
+    setDeleting(id)
+    try {
+      const res = await fetch(`/api/statements/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        throw new Error('Erro ao deletar fatura')
+      }
+
+      // Recarregar lista de faturas
+      await loadStatements()
+    } catch (error) {
+      console.error('Erro ao deletar fatura:', error)
+      alert('Erro ao deletar fatura. Tente novamente.')
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -154,13 +183,23 @@ export default function StatementsPage() {
                     </div>
                   )}
 
-                  {/* Botão Ver Detalhes */}
-                  <Link
-                    href={`/statements/${statement.id}`}
-                    className="block w-full text-center px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                  >
-                    Ver Detalhes
-                  </Link>
+                  {/* Botões de Ação */}
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/statements/${statement.id}`}
+                      className="flex-1 text-center px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                    >
+                      Ver Detalhes
+                    </Link>
+                    <button
+                      onClick={(e) => handleDelete(statement.id, statement.card.name, e)}
+                      disabled={deleting === statement.id}
+                      className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Deletar fatura"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </CardContent>
               </Card>
             )

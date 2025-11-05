@@ -98,7 +98,7 @@ export default function StatementDetailPage() {
 
     setDeleting(true)
     try {
-      const res = await fetch(`/api/statements/${params.id}/delete`, {
+      const res = await fetch(`/api/statements/${params.id}`, {
         method: 'DELETE'
       })
 
