@@ -74,13 +74,18 @@ export async function POST(request: NextRequest) {
     let errorCount = 0
     const errors: string[] = []
 
-    for (const transaction of transactions) {
+    console.log(`💾 Salvando ${transactions.length} transações no banco...`)
+
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i]
+
       try {
         const date = new Date(transaction.date)
 
         if (isNaN(date.getTime())) {
           errorCount++
           errors.push(`Data inválida: ${transaction.date}`)
+          console.log(`⚠️  Transação ${i + 1}/${transactions.length}: Data inválida`)
           continue
         }
 
@@ -110,12 +115,18 @@ export async function POST(request: NextRequest) {
         })
 
         importedCount++
+
+        if (i % 10 === 0) {
+          console.log(`💾 Progresso: ${i + 1}/${transactions.length} transações salvas`)
+        }
       } catch (error) {
         errorCount++
-        errors.push(`Erro ao salvar transação: ${error}`)
-        console.error('❌ Erro ao salvar:', error)
+        errors.push(`Erro ao salvar transação ${i + 1}: ${error}`)
+        console.error(`❌ Erro ao salvar transação ${i + 1}:`, error)
       }
     }
+
+    console.log(`✅ Importação concluída: ${importedCount} salvas, ${errorCount} erros`)
 
     // Atualizar batch
     await prisma.importBatch.update({
