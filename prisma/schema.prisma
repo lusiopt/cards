@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Cartões de crédito
+model Card {
+  id           String        @id @default(cuid())
+  name         String        // ex: "Chase Sapphire Preferred"
+  issuer       String        // ex: "Chase", "Amex", "Bank of America"
+  lastFour     String?       // últimos 4 dígitos (opcional)
+  currency     String        @default("USD") // moeda padrão do cartão
+  color        String        @default("#6366f1") // cor para UI
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([issuer])
+}
+
+// Transações
+model Transaction {
+  id               String   @id @default(cuid())
+
+  // Relacionamento com cartão
+  cardId           String
+  card             Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  // Datas
+  date             DateTime // data da compra/transação
+  postingDate      DateTime? // data de lançamento (opcional)
+
+  // Merchant e descrição
+  merchant         String   // nome do estabelecimento (original)
+  merchantClean    String?  // nome normalizado pela IA
+  description      String   // descrição completa da transação
+
+  // Valores e moedas
+  amount           Float    // valor da transação
+  currency         String   // moeda original (USD, EUR, BRL, etc)
+  amountUSD        Float?   // valor convertido para USD (se aplicável)
+
+  // Metadados opcionais
+  mcc              String?  // Merchant Category Code
+  country          String?  // país da transação
+  city             String?  // cidade
+
+  // Classificação
+  categoryId       String?
+  category         Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags             String    @default("") // tags separadas por vírgula
+
+  // IA - Classificação automática
+  aiConfidence     Float?   // 0-1, confiança da classificação
+  aiExplanation    String?  // explicação da IA sobre a classificação
+  aiProcessed      Boolean  @default(false) // se foi processado pela IA
+
+  // Flags de controle
+  isRecurring      Boolean  @default(false) // transação recorrente
+  isRefund         Boolean  @default(false) // estorno
+  isDuplicate      Boolean  @default(false) // possível duplicata
+  duplicateGroupId String?  // ID do grupo de duplicatas
+  needsReview      Boolean  @default(false) // precisa revisão manual
+
+  // Import control
+  importBatchId    String
+  importBatch      ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  rawData          String?   // JSON string com dados originais do import
+
+  // Timestamps
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([cardId])
+  @@index([date])
+  @@index([categoryId])
+  @@index([importBatchId])
+  @@index([merchant])
+  @@index([aiProcessed])
+}
+
+// Categorias
+model Category {
+  id           String        @id @default(cuid())
+  slug         String        @unique // ex: "food", "transport"
+  name         String        // ex: "Alimentação", "Transporte"
+  nameEn       String        // nome em inglês
+  color        String        // cor hex para UI
+  icon         String        // nome do ícone lucide-react
+  description  String?       // descrição da categoria
+
+  // Hierarquia (opcional para futuro)
+  parentId     String?
+  parent       Category?     @relation("SubCategories", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Category[]    @relation("SubCategories")
+
+  // Relações
+  transactions Transaction[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+// Batch de importação
+model ImportBatch {
+  id           String        @id @default(cuid())
+  fileName     String        // nome do arquivo original
+  fileType     String        // CSV, XLSX, PDF
+  fileSize     Int           // tamanho em bytes
+
+  // Metadados do import
+  cardId       String?       // cartão associado (se identificado)
+  rowCount     Int           @default(0) // total de linhas no arquivo
+  importedCount Int          @default(0) // linhas importadas com sucesso
+  errorCount   Int           @default(0) // linhas com erro
+
+  // Status
+  status       String        @default("pending") // pending, processing, completed, error
+  errors       String?       // JSON array de erros
+
+  // IA processing
+  aiDetectedIssuer String?    // emissor detectado pela IA
+  aiMapping    String?       // JSON do mapeamento de colunas detectado
+
+  // Relações
+  transactions Transaction[]
+
+  // Timestamps
+  createdAt    DateTime      @default(now())
+  completedAt  DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Configurações do usuário
+model Settings {
+  id                String   @id @default(cuid())
+
+  // Preferências gerais
+  defaultCurrency   String   @default("USD")
+  dateFormat        String   @default("MM/dd/yyyy")
+  language          String   @default("pt-BR")
+
+  // Preferências de IA
+  aiAutoClassify    Boolean  @default(true)
+  aiMinConfidence   Float    @default(0.7) // mínimo de confiança para auto-classificar
+  aiLearnFromEdits  Boolean  @default(true) // aprender com correções do usuário
+
+  // Preferências de display
+  showExplanations  Boolean  @default(true)
+  groupDuplicates   Boolean  @default(true)
+  highlightRecurring Boolean @default(true)
+
+  updatedAt         DateTime @updatedAt
+}

@@ -1,65 +1,202 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useEffect, useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ArrowUpRight, ArrowDownRight, CreditCard, TrendingUp } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+
+interface DashboardStats {
+  totalTransactions: number
+  totalAmount: number
+  categoriesCount: number
+  lastImport?: string
+}
+
+export default function Dashboard() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalTransactions: 0,
+    totalAmount: 0,
+    categoriesCount: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        // Buscar estatísticas
+        const [transactionsRes, categoriesRes] = await Promise.all([
+          fetch('/api/transactions?limit=1000'),
+          fetch('/api/categories')
+        ])
+
+        const transactionsData = await transactionsRes.json()
+        const categoriesData = await categoriesRes.json()
+
+        const total = transactionsData.transactions.reduce(
+          (sum: number, t: any) => sum + parseFloat(t.amount),
+          0
+        )
+
+        setStats({
+          totalTransactions: transactionsData.total,
+          totalAmount: total,
+          categoriesCount: categoriesData.categories.length
+        })
+      } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadStats()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-lg text-gray-600">Carregando...</div>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <p className="text-gray-600 mt-2">
+          Visão geral das suas despesas de cartões de crédito
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Total de Transações
+            </CardTitle>
+            <CreditCard className="w-4 h-4 text-gray-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalTransactions}</div>
+            <p className="text-xs text-gray-600 mt-1">
+              Todas as transações importadas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Valor Total
+            </CardTitle>
+            <TrendingUp className="w-4 h-4 text-gray-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(stats.totalAmount)}
+            </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Soma de todas as despesas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Categorias
+            </CardTitle>
+            <ArrowUpRight className="w-4 h-4 text-gray-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.categoriesCount}</div>
+            <p className="text-xs text-gray-600 mt-1">
+              Categorias disponíveis
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Média por Transação
+            </CardTitle>
+            <ArrowDownRight className="w-4 h-4 text-gray-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(
+                stats.totalTransactions > 0
+                  ? stats.totalAmount / stats.totalTransactions
+                  : 0
+              )}
+            </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Valor médio gasto
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Começar</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {stats.totalTransactions === 0 ? (
+            <div className="text-center py-12">
+              <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                Nenhuma transação ainda
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Comece importando um extrato de cartão em CSV, XLSX ou PDF
+              </p>
+              <a
+                href="/import"
+                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Importar Extrato
+              </a>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <a
+                href="/import"
+                className="flex items-center gap-4 p-4 rounded-lg border hover:border-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <ArrowUpRight className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-semibold">Importar Extrato</div>
+                  <div className="text-sm text-gray-600">
+                    Adicionar novas transações
+                  </div>
+                </div>
+              </a>
+
+              <a
+                href="/transactions"
+                className="flex items-center gap-4 p-4 rounded-lg border hover:border-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-semibold">Ver Transações</div>
+                  <div className="text-sm text-gray-600">
+                    Gerenciar suas despesas
+                  </div>
+                </div>
+              </a>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
