@@ -23,10 +23,11 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadStats() {
       try {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
         // Buscar estatísticas
         const [transactionsRes, categoriesRes] = await Promise.all([
-          fetch('/api/transactions?limit=1000'),
-          fetch('/api/categories')
+          fetch(`${baseUrl}/api/transactions?limit=1000`),
+          fetch(`${baseUrl}/api/categories`)
         ])
 
         const transactionsData = await transactionsRes.json()

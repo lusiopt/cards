@@ -20,14 +20,18 @@ export default function ImportPage() {
     formData.append('cardName', 'default')
 
     try {
-      const res = await fetch('/api/import', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/import`, {
         method: 'POST',
         body: formData
       })
       const data = await res.json()
       setResult(data)
     } catch (error) {
-      setResult({ error: 'Erro ao importar arquivo' })
+      console.error('Import error:', error)
+      setResult({
+        error: 'Erro ao importar arquivo',
+        details: error instanceof Error ? error.message : String(error)
+      })
     } finally {
       setLoading(false)
     }

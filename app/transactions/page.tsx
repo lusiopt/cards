@@ -10,7 +10,8 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/transactions?limit=100')
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+    fetch(`${baseUrl}/api/transactions?limit=100`)
       .then(res => res.json())
       .then(data => {
         setTransactions(data.transactions || [])
