@@ -58,19 +58,29 @@ export default function StatementsPage() {
 
     setDeleting(id)
     try {
-      const res = await fetch(`/api/statements/${id}`, {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+      const res = await fetch(`${baseUrl}/api/statements/${id}`, {
         method: 'DELETE'
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        throw new Error('Erro ao deletar fatura')
+        if (res.status === 404) {
+          alert('Esta fatura já foi deletada ou não existe.')
+        } else {
+          alert(data.error || 'Erro ao deletar fatura. Tente novamente.')
+        }
+        // Recarregar lista mesmo em caso de erro 404
+        await loadStatements()
+        return
       }
 
-      // Recarregar lista de faturas
+      // Recarregar lista de faturas após sucesso
       await loadStatements()
     } catch (error) {
       console.error('Erro ao deletar fatura:', error)
-      alert('Erro ao deletar fatura. Tente novamente.')
+      alert('Erro de conexão. Tente novamente.')
     } finally {
       setDeleting(null)
     }

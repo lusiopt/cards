@@ -98,18 +98,28 @@ export default function StatementDetailPage() {
 
     setDeleting(true)
     try {
-      const res = await fetch(`/api/statements/${params.id}`, {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+      const res = await fetch(`${baseUrl}/api/statements/${params.id}`, {
         method: 'DELETE'
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        throw new Error('Erro ao deletar fatura')
+        if (res.status === 404) {
+          alert('Esta fatura já foi deletada ou não existe.')
+          router.push('/statements')
+        } else {
+          alert(data.error || 'Erro ao deletar fatura. Tente novamente.')
+          setDeleting(false)
+        }
+        return
       }
 
       router.push('/statements')
     } catch (error) {
       console.error('Erro ao deletar fatura:', error)
-      alert('Erro ao deletar fatura. Tente novamente.')
+      alert('Erro de conexão. Tente novamente.')
       setDeleting(false)
     }
   }

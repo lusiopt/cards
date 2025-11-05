@@ -63,6 +63,21 @@ export async function DELETE(
   try {
     const { id } = await params
 
+    // Verificar se fatura existe antes de deletar
+    const statement = await prisma.statement.findUnique({
+      where: { id }
+    })
+
+    if (!statement) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Fatura não encontrada'
+        },
+        { status: 404 }
+      )
+    }
+
     // Deletar fatura (cascade vai deletar transações e importBatch automaticamente)
     await prisma.statement.delete({
       where: { id }
@@ -73,8 +88,20 @@ export async function DELETE(
       message: 'Fatura deletada com sucesso'
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao deletar fatura:', error)
+
+    // Tratar erro específico do Prisma quando registro não existe
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Fatura não encontrada ou já foi deletada'
+        },
+        { status: 404 }
+      )
+    }
+
     return NextResponse.json(
       {
         success: false,
