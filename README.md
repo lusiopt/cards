@@ -278,6 +278,46 @@ npx prisma db seed
 - **Verificar:** Formato do arquivo (CSV com headers, XLSX primeira sheet, PDF com texto)
 - **Logs:** Ver resposta da API em Network tab do browser
 
+## 📌 VERSÕES ESTÁVEIS E ROLLBACK
+
+### 🏷️ v1.0-stable (Atual)
+
+**Tag:** `cards-v1.0-stable`
+**Data:** 05 Novembro 2025
+**Commit:** `6401965`
+
+**Status:** ✅ Produção em dev.lusio.market/cards
+
+**Features:**
+- ✅ Sistema completo de importação (CSV/XLSX/PDF)
+- ✅ Análise com IA (Claude Sonnet 4)
+- ✅ Dashboard com estatísticas
+- ✅ Sistema de faturas mensais
+- ✅ UI shadcn/ui com contraste otimizado
+- ✅ Design responsivo e acessível
+
+**Rollback para esta versão:**
+```bash
+# Local
+git checkout cards-v1.0-stable
+git push origin dev --force
+
+# VPS
+ssh root@72.61.165.88 'cd /var/www/dev/cards && \
+  git fetch --tags && \
+  git reset --hard cards-v1.0-stable && \
+  npm install && \
+  npm run build && \
+  pm2 restart cards-dev'
+```
+
+**Ver todas as tags:**
+```bash
+git tag -l "cards-v*" -n9
+```
+
+---
+
 ## 📄 Licença
 
 Uso pessoal - Euclides Gomes
