@@ -26,8 +26,7 @@ export async function parseFile(file: File): Promise<ParsedRow[]> {
   // PDF
   if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
     const arrayBuffer = await file.arrayBuffer()
-    const result = await parsePDF(arrayBuffer)
-    return result.rows
+    return parsePDF(arrayBuffer)
   }
 
   throw new Error('Formato de arquivo não suportado. Use CSV, XLSX ou PDF.')
