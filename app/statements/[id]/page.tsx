@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
-import { ArrowLeft, Calendar, DollarSign, CreditCard } from 'lucide-react'
+import { ArrowLeft, Calendar, DollarSign, CreditCard, User, Wallet } from 'lucide-react'
 
 interface Transaction {
   id: string
@@ -27,8 +27,11 @@ interface Statement {
     name: string
     issuer: string
     color: string
+    lastFour: string | null
+    currency: string
   }
   statementDate: string
+  dueDate: string | null
   periodStart: string
   periodEnd: string
   totalAmount: number
@@ -110,50 +113,130 @@ export default function StatementDetailPage() {
         </span>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Período
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm">
-              {new Date(statement.periodStart).toLocaleDateString('pt-BR')}
-              <br />
-              {new Date(statement.periodEnd).toLocaleDateString('pt-BR')}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Card de Informações da Fatura */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="w-5 h-5" />
+            Informações da Fatura
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Coluna 1: Cartão */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  <Wallet className="w-4 h-4" />
+                  Cartão
+                </label>
+                <div className="mt-1">
+                  <div className="text-lg font-semibold">{statement.card.name}</div>
+                  <div className="text-sm text-gray-600">{statement.card.issuer}</div>
+                </div>
+              </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              Valor Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(statement.totalAmount)}
-            </div>
-          </CardContent>
-        </Card>
+              {statement.card.lastFour && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    Número do Cartão
+                  </label>
+                  <div className="mt-1 text-lg font-mono">
+                    •••• •••• •••• {statement.card.lastFour}
+                  </div>
+                </div>
+              )}
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
-              Transações
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{statement.transactionCount}</div>
-          </CardContent>
-        </Card>
-      </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">
+                  Moeda
+                </label>
+                <div className="mt-1 text-lg font-semibold">
+                  {statement.card.currency}
+                </div>
+              </div>
+            </div>
+
+            {/* Coluna 2: Datas */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Data de Fechamento
+                </label>
+                <div className="mt-1 text-lg font-semibold">
+                  {new Date(statement.statementDate).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </div>
+              </div>
+
+              {statement.dueDate && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    Data de Vencimento
+                  </label>
+                  <div className="mt-1">
+                    <div className="text-lg font-semibold text-red-600">
+                      {new Date(statement.dueDate).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </div>
+                    {!statement.isPaid && new Date(statement.dueDate) < new Date() && (
+                      <span className="text-xs text-red-600 font-medium">Vencida</span>
+                    )}
+                    {!statement.isPaid && new Date(statement.dueDate) >= new Date() && (
+                      <span className="text-xs text-gray-600">
+                        {Math.ceil((new Date(statement.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} dias restantes
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-500">
+                  Período da Fatura
+                </label>
+                <div className="mt-1 text-sm">
+                  {new Date(statement.periodStart).toLocaleDateString('pt-BR')} até{' '}
+                  {new Date(statement.periodEnd).toLocaleDateString('pt-BR')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Valores em destaque */}
+          <div className="mt-6 pt-6 border-t grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Valor Total</label>
+              <div className="mt-1 text-2xl font-bold">
+                {formatCurrency(statement.totalAmount)}
+              </div>
+            </div>
+
+            {statement.paidAmount > 0 && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">Valor Pago</label>
+                <div className="mt-1 text-2xl font-bold text-green-600">
+                  {formatCurrency(statement.paidAmount)}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-medium text-gray-500">Saldo Devedor</label>
+              <div className="mt-1 text-2xl font-bold text-red-600">
+                {formatCurrency(statement.balance)}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Breakdown por Categoria */}
       {Object.keys(breakdown).length > 0 && (

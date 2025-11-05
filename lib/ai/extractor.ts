@@ -15,6 +15,23 @@ export interface ExtractedTransaction {
   explanation?: string
 }
 
+export interface StatementMetadata {
+  statementDate?: string // data de fechamento
+  dueDate?: string // data de vencimento
+  periodStart?: string // início do período
+  periodEnd?: string // fim do período
+  totalAmount?: number // valor total da fatura
+  minimumPayment?: number // pagamento mínimo
+  previousBalance?: number // saldo anterior
+  cardNumber?: string // últimos 4 dígitos
+  cardHolder?: string // nome do titular
+}
+
+export interface ExtractionResult {
+  transactions: ExtractedTransaction[]
+  statement: StatementMetadata
+}
+
 /**
  * Extrai e estrutura transações de linhas CSV/XLSX brutas usando IA
  * A IA identifica automaticamente as colunas e formatos
@@ -22,7 +39,7 @@ export interface ExtractedTransaction {
 export async function extractTransactionsFromRows(
   rows: any[],
   file?: File
-): Promise<ExtractedTransaction[]> {
+): Promise<ExtractionResult> {
 
   // Se for PDF, processar de forma diferente
   if (rows.length > 0 && rows[0]._isPDF && file) {
@@ -34,12 +51,25 @@ export async function extractTransactionsFromRows(
 
   const prompt = `Você é um especialista em processar extratos de cartão de crédito.
 
-Receba o seguinte conjunto de linhas CSV/XLSX e extraia as transações individuais.
+Receba o seguinte conjunto de linhas CSV/XLSX e extraia:
+1. Informações da FATURA (metadata)
+2. Todas as TRANSAÇÕES individuais
 
 **DADOS:**
 ${JSON.stringify(sample, null, 2)}
 
-**INSTRUÇÕES:**
+**INSTRUÇÕES PARTE 1 - METADATA DA FATURA:**
+Procure por informações da fatura como:
+- Data de fechamento (statement date, closing date)
+- Data de vencimento (due date, payment date)
+- Período da fatura (billing period, start/end dates)
+- Valor total (total amount, balance due)
+- Pagamento mínimo (minimum payment)
+- Saldo anterior (previous balance)
+- Número do cartão (últimos 4 dígitos)
+- Nome do titular (cardholder name)
+
+**INSTRUÇÕES PARTE 2 - TRANSAÇÕES:**
 1. Identifique automaticamente quais colunas representam:
    - Data da transação
    - Nome do merchant/estabelecimento
@@ -47,13 +77,13 @@ ${JSON.stringify(sample, null, 2)}
    - Valor (sempre positivo, sem símbolo)
    - Moeda (USD, EUR, BRL, etc)
 
-2. Para CADA linha válida, extraia e retorne:
+2. Para CADA linha válida de transação, extraia:
    - date: formato YYYY-MM-DD
    - merchant: nome do estabelecimento
    - description: descrição completa
    - amount: valor numérico positivo
    - currency: código da moeda (USD, EUR, BRL, etc)
-   - category: categoria da transação (food, transport, shopping, bills, entertainment, subscriptions, travel, health, education, financial, other)
+   - category: categoria (food, transport, shopping, bills, entertainment, subscriptions, travel, health, education, financial, other)
    - confidence: confiança na classificação (0-1)
    - explanation: explicação da classificação
 
@@ -63,9 +93,20 @@ ${JSON.stringify(sample, null, 2)}
    - Linhas vazias ou inválidas
    - Pagamentos/créditos (apenas débitos/compras)
 
-4. RETORNE um array JSON com TODAS as transações extraídas:
+4. RETORNE JSON no formato:
 
 {
+  "statement": {
+    "statementDate": "2025-10-23",
+    "dueDate": "2025-11-15",
+    "periodStart": "2025-09-24",
+    "periodEnd": "2025-10-23",
+    "totalAmount": 4464.21,
+    "minimumPayment": 223.21,
+    "previousBalance": 0,
+    "cardNumber": "1234",
+    "cardHolder": "JOHN DOE"
+  },
   "transactions": [
     {
       "date": "2025-10-24",
@@ -80,6 +121,7 @@ ${JSON.stringify(sample, null, 2)}
   ]
 }
 
+IMPORTANTE: Se não encontrar alguma informação da fatura, deixe o campo como null ou omita.
 RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
 
   try {
@@ -130,7 +172,10 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
       throw new Error('Resposta não contém lista de transações')
     }
 
-    return result.transactions
+    return {
+      transactions: result.transactions,
+      statement: result.statement || {}
+    }
 
   } catch (error) {
     console.error('Erro ao extrair transações com IA:', error)
@@ -146,15 +191,28 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
 /**
  * Extrai transações diretamente de um PDF
  */
-async function extractTransactionsFromPDF(file: File): Promise<ExtractedTransaction[]> {
+async function extractTransactionsFromPDF(file: File): Promise<ExtractionResult> {
   const arrayBuffer = await file.arrayBuffer()
   const base64 = Buffer.from(arrayBuffer).toString('base64')
 
   const prompt = `Você é um especialista em processar extratos de cartão de crédito em PDF.
 
-Analise o PDF e extraia TODAS as transações/compras listadas.
+Analise o PDF e extraia:
+1. Informações da FATURA (metadata do cabeçalho/rodapé)
+2. TODAS as transações/compras listadas
 
-**INSTRUÇÕES:**
+**INSTRUÇÕES PARTE 1 - METADATA DA FATURA:**
+Procure no cabeçalho, rodapé e seções de resumo:
+- Data de fechamento (statement date, closing date)
+- Data de vencimento (due date, payment date)
+- Período da fatura (billing period)
+- Valor total (total amount, balance due, new balance)
+- Pagamento mínimo (minimum payment)
+- Saldo anterior (previous balance)
+- Número do cartão (últimos 4 dígitos, ex: ending in 1234)
+- Nome do titular (cardholder name)
+
+**INSTRUÇÕES PARTE 2 - TRANSAÇÕES:**
 1. Procure por tabelas de transações, compras, débitos ou lançamentos
 2. Ignore linhas de totais, resumos, cabeçalhos e pagamentos/créditos
 3. Extraia APENAS transações individuais de compras/débitos
@@ -169,8 +227,19 @@ Para CADA transação válida, retorne:
 - confidence: confiança na classificação (0-1)
 - explanation: explicação da classificação
 
-**RETORNE um JSON:**
+**RETORNE JSON no formato:**
 {
+  "statement": {
+    "statementDate": "2025-10-23",
+    "dueDate": "2025-11-15",
+    "periodStart": "2025-09-24",
+    "periodEnd": "2025-10-23",
+    "totalAmount": 4464.21,
+    "minimumPayment": 223.21,
+    "previousBalance": 0,
+    "cardNumber": "1234",
+    "cardHolder": "JOHN DOE"
+  },
   "transactions": [
     {
       "date": "2025-10-24",
@@ -185,6 +254,7 @@ Para CADA transação válida, retorne:
   ]
 }
 
+IMPORTANTE: Se não encontrar alguma informação da fatura, deixe o campo como null ou omita.
 RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
 
   try {
@@ -247,7 +317,10 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
       throw new Error('Resposta da IA não contém transações válidas')
     }
 
-    return result.transactions
+    return {
+      transactions: result.transactions,
+      statement: result.statement || {}
+    }
 
   } catch (error) {
     console.error('Erro ao extrair transações de PDF:', error)
@@ -267,7 +340,7 @@ export async function extractTransactionsInBatches(
   rows: any[],
   batchSize: number = 100,
   file?: File
-): Promise<ExtractedTransaction[]> {
+): Promise<ExtractionResult> {
   // Se for PDF, processar de uma vez
   if (rows.length > 0 && rows[0]._isPDF && file) {
     console.log('📄 Processando PDF com IA Claude...')
@@ -275,7 +348,8 @@ export async function extractTransactionsInBatches(
   }
 
   // CSV/XLSX: processar em lotes
-  const results: ExtractedTransaction[] = []
+  const allTransactions: ExtractedTransaction[] = []
+  let statementMetadata: StatementMetadata = {}
 
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize)
@@ -283,12 +357,24 @@ export async function extractTransactionsInBatches(
 
     try {
       const extracted = await extractTransactionsFromRows(batch, file)
-      results.push(...extracted)
-      console.log(`✅ Lote processado: ${extracted.length} transações extraídas`)
+      allTransactions.push(...extracted.transactions)
+
+      // Mesclar metadata da fatura (priorizar dados mais completos)
+      if (extracted.statement) {
+        statementMetadata = {
+          ...statementMetadata,
+          ...extracted.statement
+        }
+      }
+
+      console.log(`✅ Lote processado: ${extracted.transactions.length} transações extraídas`)
     } catch (error) {
       console.error(`❌ Erro no lote ${i}-${i + batchSize}:`, error)
     }
   }
 
-  return results
+  return {
+    transactions: allTransactions,
+    statement: statementMetadata
+  }
 }

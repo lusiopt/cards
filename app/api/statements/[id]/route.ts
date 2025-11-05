@@ -17,7 +17,9 @@ export async function GET(
             id: true,
             name: true,
             issuer: true,
-            color: true
+            color: true,
+            lastFour: true,
+            currency: true
           }
         },
         transactions: {

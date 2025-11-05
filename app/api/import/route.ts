@@ -66,20 +66,53 @@ export async function POST(request: NextRequest) {
 
     // Extrair e classificar transações com IA
     console.log('🤖 Extraindo transações com IA Claude...')
-    const transactions = await extractTransactionsInBatches(rows, 50, file)
+    const extracted = await extractTransactionsInBatches(rows, 50, file)
+    const transactions = extracted.transactions
+    const statementMetadata = extracted.statement
     console.log(`✅ IA extraiu ${transactions.length} transações`)
+    console.log(`📊 Metadata da fatura:`, statementMetadata)
 
-    // Identificar período da fatura (baseado nas datas das transações)
+    // Usar dados extraídos pela IA ou calcular fallback
     const dates = transactions.map(t => new Date(t.date)).filter(d => !isNaN(d.getTime()))
-    const periodStart = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : new Date()
-    const periodEnd = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : new Date()
-    const statementDate = periodEnd // data de fechamento = última transação
+
+    const periodStart = statementMetadata.periodStart
+      ? new Date(statementMetadata.periodStart)
+      : (dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : new Date())
+
+    const periodEnd = statementMetadata.periodEnd
+      ? new Date(statementMetadata.periodEnd)
+      : (dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : new Date())
+
+    const statementDate = statementMetadata.statementDate
+      ? new Date(statementMetadata.statementDate)
+      : periodEnd
+
+    const dueDate = statementMetadata.dueDate
+      ? new Date(statementMetadata.dueDate)
+      : (() => {
+          const fallbackDue = new Date(statementDate)
+          fallbackDue.setDate(fallbackDue.getDate() + 15)
+          return fallbackDue
+        })()
+
+    // Atualizar card com informações extraídas (se disponíveis)
+    if (statementMetadata.cardNumber || statementMetadata.cardHolder) {
+      await prisma.card.update({
+        where: { id: card.id },
+        data: {
+          ...(statementMetadata.cardNumber && { lastFour: statementMetadata.cardNumber }),
+          ...(statementMetadata.cardHolder && { name: statementMetadata.cardHolder })
+        }
+      })
+      console.log(`💳 Card atualizado com dados da fatura`)
+    }
 
     // Criar Statement (fatura) para este import
     const statement = await prisma.statement.create({
       data: {
         cardId: card.id,
         statementDate,
+        dueDate,
         periodStart,
         periodEnd,
         importBatchId: importBatch.id,
