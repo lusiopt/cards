@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { CreditCard, Home, Upload, Settings } from "lucide-react";
+import { CreditCard, Home, Upload, Settings, FileText } from "lucide-react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -49,6 +49,13 @@ export default function RootLayout({
                   >
                     <CreditCard className="w-4 h-4" />
                     Transações
+                  </Link>
+                  <Link
+                    href="/statements"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Faturas
                   </Link>
                   <Link
                     href="/settings"
