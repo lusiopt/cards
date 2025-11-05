@@ -77,7 +77,17 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`
       throw new Error('Resposta inválida da API')
     }
 
-    const result = JSON.parse(content.text)
+    // Limpar markdown code blocks se houver
+    let jsonText = content.text.trim()
+
+    // Remove ```json e ``` se existirem
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
+
+    const result = JSON.parse(jsonText.trim())
 
     return {
       rows: result.rows || [],
