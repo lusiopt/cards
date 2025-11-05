@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowUpRight, ArrowDownRight, CreditCard, TrendingUp } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
@@ -156,16 +157,16 @@ export default function Dashboard() {
               <p className="text-gray-600 mb-4">
                 Comece importando um extrato de cartão em CSV, XLSX ou PDF
               </p>
-              <a
+              <Link
                 href="/import"
                 className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
                 Importar Extrato
-              </a>
+              </Link>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
-              <a
+              <Link
                 href="/import"
                 className="flex items-center gap-4 p-4 rounded-lg border hover:border-blue-600 hover:bg-blue-50 transition-colors"
               >
@@ -178,9 +179,9 @@ export default function Dashboard() {
                     Adicionar novas transações
                   </div>
                 </div>
-              </a>
+              </Link>
 
-              <a
+              <Link
                 href="/transactions"
                 className="flex items-center gap-4 p-4 rounded-lg border hover:border-blue-600 hover:bg-blue-50 transition-colors"
               >
@@ -193,7 +194,7 @@ export default function Dashboard() {
                     Gerenciar suas despesas
                   </div>
                 </div>
-              </a>
+              </Link>
             </div>
           )}
         </CardContent>
