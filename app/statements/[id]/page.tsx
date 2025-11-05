@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
-import { ArrowLeft, Calendar, DollarSign, CreditCard, User, Wallet } from 'lucide-react'
+import { ArrowLeft, Calendar, DollarSign, CreditCard, User, Wallet, Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface Transaction {
   id: string
@@ -46,8 +47,10 @@ interface Statement {
 
 export default function StatementDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const [statement, setStatement] = useState<Statement | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     async function loadStatement() {
@@ -88,29 +91,64 @@ export default function StatementDetailPage() {
     ? JSON.parse(statement.categoryBreakdown)
     : {}
 
+  async function handleDelete() {
+    if (!confirm('Tem certeza que deseja deletar esta fatura? Esta ação não pode ser desfeita.')) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/statements/${params.id}/delete`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        throw new Error('Erro ao deletar fatura')
+      }
+
+      router.push('/statements')
+    } catch (error) {
+      console.error('Erro ao deletar fatura:', error)
+      alert('Erro ao deletar fatura. Tente novamente.')
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href="/statements"
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/statements"
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div className="flex-1">
-          <h2 className="text-3xl font-bold tracking-tight">Detalhes da Fatura</h2>
-          <p className="text-gray-600 mt-1">{statement.card.name}</p>
+          <div className="flex-1">
+            <h2 className="text-3xl font-bold tracking-tight">Detalhes da Fatura</h2>
+            <p className="text-gray-600 mt-1">{statement.card.name}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                statement.isPaid
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}
+            >
+              {statement.isPaid ? 'Paga' : 'Em aberto'}
+            </span>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-4 h-4" />
+              {deleting ? 'Deletando...' : 'Deletar Fatura'}
+            </button>
+          </div>
         </div>
-        <span
-          className={`px-3 py-1 rounded-full text-sm font-medium ${
-            statement.isPaid
-              ? 'bg-green-100 text-green-700'
-              : 'bg-yellow-100 text-yellow-700'
-          }`}
-        >
-          {statement.isPaid ? 'Paga' : 'Em aberto'}
-        </span>
       </div>
 
       {/* Card de Informações da Fatura */}
