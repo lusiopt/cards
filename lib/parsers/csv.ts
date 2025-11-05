@@ -20,7 +20,7 @@ export async function parseCSV(file: File): Promise<ParsedRow[]> {
       complete: (results) => {
         resolve(results.data as ParsedRow[])
       },
-      error: (error) => {
+      error: (error: Error) => {
         reject(error)
       }
     })
