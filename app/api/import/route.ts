@@ -13,12 +13,20 @@ export const config = {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('📥 Import request received')
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const cardName = (formData.get('cardName') as string) || 'Default Card'
 
+    console.log('📄 File info:', {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size
+    })
+
     if (!file) {
+      console.error('❌ No file provided')
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
@@ -41,7 +49,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse do arquivo
+    console.log('🔍 Parsing file...')
     const rows = await parseFile(file)
+    console.log(`✅ Parsed ${rows.length} rows`)
 
     // Criar batch de importação
     const importBatch = await prisma.importBatch.create({
