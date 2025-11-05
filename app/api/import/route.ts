@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseFile } from '@/lib/parsers'
 import { prisma } from '@/lib/db'
-import { classifyTransaction } from '@/lib/ai/classifier'
+import { extractTransactionsInBatches } from '@/lib/ai/extractor'
 
 // Aumentar limite de body size
 export const config = {
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Parse do arquivo
+    // Parse do arquivo (extrai linhas brutas)
     console.log('🔍 Parsing file...')
     const rows = await parseFile(file)
     console.log(`✅ Parsed ${rows.length} rows`)
@@ -64,64 +64,56 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Processar cada linha
+    // Extrair e classificar transações com IA
+    console.log('🤖 Extraindo transações com IA Claude...')
+    const transactions = await extractTransactionsInBatches(rows, 50)
+    console.log(`✅ IA extraiu ${transactions.length} transações`)
+
+    // Salvar transações no banco
     let importedCount = 0
     let errorCount = 0
     const errors: string[] = []
 
-    for (const row of rows) {
+    for (const transaction of transactions) {
       try {
-        // Extrair dados da linha
-        const date = new Date(row.date || row.Date || row.DATA || '')
-        const merchant = row.merchant || row.Merchant || row.Description || row.DESCRICAO || ''
-        const description = row.description || row.Description || merchant
-        const amount = parseFloat(String(row.amount || row.Amount || row.VALOR || '0').replace(/[^0-9.-]/g, ''))
-        const currency = row.currency || row.Currency || row.MOEDA || 'USD'
+        const date = new Date(transaction.date)
 
-        if (!merchant || isNaN(amount)) {
+        if (isNaN(date.getTime())) {
           errorCount++
-          errors.push(`Linha inválida: ${JSON.stringify(row)}`)
+          errors.push(`Data inválida: ${transaction.date}`)
           continue
         }
 
-        // Classificar com IA
-        const classification = await classifyTransaction(
-          merchant,
-          description,
-          amount,
-          currency,
-          date
-        )
-
         // Buscar categoria no banco
         const category = await prisma.category.findFirst({
-          where: { slug: classification.category }
+          where: { slug: transaction.category || 'other' }
         })
 
         // Criar transação
         await prisma.transaction.create({
           data: {
             date,
-            merchant,
-            merchantClean: classification.merchantClean || merchant,
-            description,
-            amount,
-            currency,
+            merchant: transaction.merchant,
+            merchantClean: transaction.merchant,
+            description: transaction.description,
+            amount: transaction.amount,
+            currency: transaction.currency,
             categoryId: category?.id,
-            tags: classification.tags.join(','),
-            aiConfidence: classification.confidence,
-            aiExplanation: classification.explanation,
+            tags: transaction.category || 'other',
+            aiConfidence: transaction.confidence || 0.5,
+            aiExplanation: transaction.explanation || 'Classificado automaticamente',
             aiProcessed: true,
             cardId: card.id,
             importBatchId: importBatch.id,
-            rawData: JSON.stringify(row)
+            rawData: JSON.stringify(transaction)
           }
         })
 
         importedCount++
       } catch (error) {
         errorCount++
-        errors.push(`Erro ao processar linha: ${error}`)
+        errors.push(`Erro ao salvar transação: ${error}`)
+        console.error('❌ Erro ao salvar:', error)
       }
     }
 
